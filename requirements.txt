@@ -1,0 +1,20 @@
+# FastAPI & Server
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# Claude AI
+anthropic>=0.18.0
+
+# Google Sheets Integration
+gspread>=6.0.0
+google-auth>=2.27.0
+google-auth-oauthlib>=1.2.0
+
+# PDF Processing (for RAG)
+PyMuPDF>=1.23.0
+pdfplumber>=0.10.0
+
+# Utilities
+python-dotenv>=1.0.0
+python-multipart>=0.0.6
+pydantic>=2.5.0

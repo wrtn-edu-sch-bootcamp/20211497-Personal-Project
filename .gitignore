@@ -1,0 +1,35 @@
+# Environment
+.env
+*.json
+!data/*.json
+!vercel.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel/
+
+# Logs
+*.log
+
+# Google credentials
+*credentials*.json
+*service_account*.json

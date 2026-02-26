@@ -1,0 +1,12 @@
+{
+  "source": "야훼이레",
+  "hymns": [
+    {"number": 1, "title": "예시 성가 1"},
+    {"number": 2, "title": "예시 성가 2"},
+    {"number": 15, "title": "예시 화답송"},
+    {"number": 32, "title": "예시 입당송"},
+    {"number": 57, "title": "예시 영성체송"},
+    {"number": 88, "title": "예시 파견송"}
+  ],
+  "note": "실제 야훼이레 성가 목록으로 교체 필요"
+}

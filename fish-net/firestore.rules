@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 헬퍼 함수 ──────────────────────────────────────────
+    // 로그인한 사용자의 role 조회
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isTeacher() {
+      return request.auth != null && getUserRole() == 'teacher';
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // ── users ───────────────────────────────────────────────
+    // 로그인한 사용자만 읽기, 본인 문서만 생성/수정
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    // ── students ────────────────────────────────────────────
+    // 학생 목록은 비로그인(학생 응답 페이지)도 읽을 수 있어야 함
+    // 쓰기는 교사(로그인) 또는 Admin SDK(서버) 전용
+    match /students/{studentId} {
+      allow read: if true;
+      allow create: if isTeacher();
+      allow update: if isTeacher();
+      allow delete: if isTeacher();
+    }
+
+    // ── massDates ───────────────────────────────────────────
+    // 미사 일정도 비로그인 학생이 읽을 수 있어야 함
+    match /massDates/{massDateId} {
+      allow read: if true;
+      allow create: if isTeacher();
+      allow update: if isTeacher();
+      allow delete: if isTeacher();
+    }
+
+    // ── availabilities ──────────────────────────────────────
+    // 학생 응답 페이지는 비로그인 → 누구나 읽기/쓰기 허용
+    // (학생 본인 확인은 앱 레벨에서 studentId로 처리)
+    match /availabilities/{availabilityId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if isTeacher();
+    }
+
+    // ── assignments ─────────────────────────────────────────
+    // 배정 결과: 비로그인 읽기/쓰기 허용 (교사 대시보드가 비로그인 상태)
+    // 추후 인증 시스템 도입 시 isTeacher()로 제한 권장
+    match /assignments/{assignmentId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    // ── swapRequests ────────────────────────────────────────
+    match /swapRequests/{requestId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if isTeacher();
+    }
+
+    // ── hymns ───────────────────────────────────────────────
+    // 성가 목록은 누구나 읽기 가능
+    match /hymns/{hymnId} {
+      allow read: if true;
+      allow write: if isTeacher();
+    }
+
+    // ── massHymns ───────────────────────────────────────────
+    match /massHymns/{massHymnId} {
+      allow read: if true;
+      allow create: if isTeacher();
+      allow update: if isTeacher();
+      allow delete: if isTeacher();
+    }
+
+    // ── messages ────────────────────────────────────────────
+    match /messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isTeacher();
+      allow update: if isTeacher();
+      allow delete: if isTeacher();
+    }
+  }
+}
