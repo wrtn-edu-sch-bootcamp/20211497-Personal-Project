@@ -30,6 +30,9 @@ Thumbs.db
 # Logs
 *.log
 
+# PDF files
+*.pdf
+
 # Google credentials
 *credentials*.json
 *service_account*.json
