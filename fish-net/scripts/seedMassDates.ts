@@ -19,11 +19,10 @@ const SERVICE_ACCOUNT_PATH = path.join(__dirname, "service-account.json");
 // 생성할 연도
 const TARGET_YEAR = 2026;
 
-// 역할 목록
+// 역할 목록 (해설은 외부에서 정하므로 제외)
 const DEFAULT_ROLES = [
   "reading1",
   "reading2",
-  "commentary",
   "accompaniment",
   "prayer1",
   "prayer2",
@@ -48,7 +47,9 @@ const db = admin.firestore();
 
 function getSaturdaysOfYear(year: number): Date[] {
   const saturdays: Date[] = [];
-  const date = new Date(year, 0, 1); // 1월 1일
+  // 한국 시간(KST) 기준으로 토요일 정오(12:00)를 기준점으로 사용
+  // 정오를 쓰면 UTC 변환 시에도 같은 날짜 유지
+  const date = new Date(year, 0, 1, 12, 0, 0); // 1월 1일 정오
   
   // 첫 번째 토요일 찾기
   while (date.getDay() !== 6) {

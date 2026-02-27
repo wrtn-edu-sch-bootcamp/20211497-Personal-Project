@@ -34,7 +34,6 @@ export type User = Student | Teacher;
 export type RoleType =
   | "reading1"
   | "reading2"
-  | "commentary"
   | "accompaniment"
   | "prayer1"
   | "prayer2";
@@ -62,13 +61,6 @@ export const ROLES: Record<RoleType, Role> = {
     requiresInstrument: false,
     difficulty: "medium",
   },
-  commentary: {
-    id: "commentary",
-    name: "해설",
-    description: "미사 진행을 해설합니다",
-    requiresInstrument: false,
-    difficulty: "hard",
-  },
   accompaniment: {
     id: "accompaniment",
     name: "반주",
@@ -78,14 +70,14 @@ export const ROLES: Record<RoleType, Role> = {
   },
   prayer1: {
     id: "prayer1",
-    name: "우리의기도1",
+    name: "보편지향기도1",
     description: "신자들의 기도를 낭독합니다 (1번)",
     requiresInstrument: false,
     difficulty: "easy",
   },
   prayer2: {
     id: "prayer2",
-    name: "우리의기도2",
+    name: "보편지향기도2",
     description: "신자들의 기도를 낭독합니다 (2번)",
     requiresInstrument: false,
     difficulty: "easy",
@@ -106,6 +98,8 @@ export interface StudentAvailability {
   studentName?: string;
   massDateId: string;
   status: AvailabilityStatus;
+  /** 복사단 봉사 일정으로 인한 참석 불가 여부 */
+  isCopasadan?: boolean;
   comment?: string;
   analyzedPriority?: number;
   analyzedReason?: string;
@@ -120,7 +114,9 @@ export interface Assignment {
   role: RoleType;
   isPrimary: boolean;
   backupOrder?: number;
-  status: "assigned" | "confirmed" | "declined" | "swapped";
+  status: "assigned" | "confirmed" | "declined" | "swapped" | "absent";
+  absentReason?: string;
+  absentReportedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -169,6 +165,54 @@ export interface MassHymns {
   updatedAt: Date;
 }
 
+// ==================== 성가 안내 (Hymn Announcement) ====================
+
+/** 미사의 6가지 성가 슬롯 */
+export type HymnSlotKey =
+  | "entrance"      // 입당 성가
+  | "offertory1"    // 봉헌 성가 1
+  | "offertory2"    // 봉헌 성가 2
+  | "communion1"    // 성체 성가 1
+  | "communion2"    // 성체 성가 2
+  | "dismissal";    // 파견 성가
+
+export const HYMN_SLOT_LABELS: Record<HymnSlotKey, string> = {
+  entrance: "입당 성가",
+  offertory1: "봉헌 성가 1",
+  offertory2: "봉헌 성가 2",
+  communion1: "성체 성가 1",
+  communion2: "성체 성가 2",
+  dismissal: "파견 성가",
+};
+
+export const HYMN_SLOT_ORDER: HymnSlotKey[] = [
+  "entrance",
+  "offertory1",
+  "offertory2",
+  "communion1",
+  "communion2",
+  "dismissal",
+];
+
+/** 개별 성가 항목 */
+export interface HymnEntry {
+  number?: string;    // 곡 번호 (선택)
+  title: string;      // 곡 제목
+  note?: string;      // 메모 (선택)
+}
+
+/** 특정 미사 날짜의 성가 안내 문서 */
+export interface HymnAnnouncement {
+  id: string;
+  massDateId: string;   // massDates 컬렉션 참조
+  date: string;         // "YYYY-MM-DD" (조회 편의용)
+  month: string;        // "YYYY-MM" (월별 조회용)
+  slots: Partial<Record<HymnSlotKey, HymnEntry>>;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Message {
   id: string;
   type: "assignment" | "hymn" | "backup_request" | "reminder";
@@ -199,7 +243,7 @@ export interface MonthlyAssignmentRequest {
 /** 개별 배정 결과 (날짜 + 역할별) */
 export interface MonthlyAssignment {
   date: string;       // "YYYY-MM-DD"
-  role: string;       // "1독서" | "2독서" | "해설" | "반주" | "우리의기도"
+  role: string;       // "1독서" | "2독서" | "해설" | "반주" | "보편지향기도"
   primary: string;    // 1순위 학생 이름
   backup1: string;    // 1순위 백업
   backup2: string;    // 2순위 백업
@@ -217,4 +261,23 @@ export interface MonthlyAssignmentError {
   success: false;
   error: string;
   code: "INVALID_REQUEST" | "NO_MASS_DATES" | "NO_STUDENTS" | "CLAUDE_ERROR" | "PARSE_ERROR";
+}
+
+// ==================== 출석 관련 ====================
+
+export type AttendanceStatus = "present" | "absent" | "absent_with_reason" | "unknown";
+
+/** 날짜별 학생 출석 기록 */
+export interface Attendance {
+  id: string;
+  studentId: string;
+  studentName: string;
+  /** "YYYY-MM-DD" */
+  date: string;
+  status: AttendanceStatus;
+  /** 긴급 불참 신고 사유 (absent_with_reason일 때) */
+  reason?: string;
+  /** auto: 긴급신고 자동 처리, teacher: 교사 원클릭 처리 */
+  confirmedBy: "auto" | "teacher";
+  updatedAt: Date;
 }

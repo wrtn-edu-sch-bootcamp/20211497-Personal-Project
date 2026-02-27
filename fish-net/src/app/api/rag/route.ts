@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { answerRoleQuestion } from "@/lib/langchain";
+import { answerRoleQuestion, answerGuideQuestion } from "@/lib/langchain";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { role, question } = body;
+    const { question, role } = body as { question?: string; role?: string };
 
-    if (!role || !question) {
-      return NextResponse.json(
-        { error: "역할과 질문을 입력해주세요." },
-        { status: 400 }
-      );
+    if (!question?.trim()) {
+      return NextResponse.json({ error: "질문을 입력해주세요." }, { status: 400 });
     }
 
-    const answer = await answerRoleQuestion(role, question);
+    // role이 명시되면 해당 역할 가이드만 참조, 없으면 질문에서 자동 감지
+    const answer = role
+      ? await answerRoleQuestion(role, question)
+      : await answerGuideQuestion(question);
 
     return NextResponse.json({ answer });
   } catch (error) {
-    console.error("RAG API Error:", error);
+    console.error("[POST /api/rag] 오류:", error);
     return NextResponse.json(
       { error: "질문 처리 중 오류가 발생했습니다." },
       { status: 500 }

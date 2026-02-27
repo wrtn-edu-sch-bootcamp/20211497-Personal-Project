@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  Timestamp,
-  orderBy,
-  limit,
-} from "firebase/firestore";
-import { firestore } from "@/lib/firebase";
+import { getAdminFirestore } from "@/lib/firebase-admin";
+import { Timestamp } from "firebase-admin/firestore";
 import {
   generateMonthlyAssignments,
   MonthlyAssignmentInput,
@@ -26,11 +18,6 @@ function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-/**
- * 세례명(baptismalName)으로 성별 추론
- * 여성 세례명 패턴: ~아, ~나, ~라, ~사, ~엘, 마리아, 데레사, 바르바라 등
- * 남성 세례명 패턴: ~오, ~엘, 요한, 바오로, 미카엘, 다니엘 등
- */
 function inferGenderFromBaptismalName(baptismalName: string | undefined): "M" | "F" | "?" {
   if (!baptismalName || baptismalName === "없음" || baptismalName === "세례못받음") {
     return "?";
@@ -77,19 +64,22 @@ function inferGenderFromBaptismalName(baptismalName: string | undefined): "M" | 
   return "?";
 }
 
-async function getStudentsFromFirestore(): Promise<
-  {
-    id: string;
-    name: string;
-    isNew: boolean;
-    canPlayInstrument: boolean;
-    isSinger: boolean;
-    gender: "M" | "F" | "?";
-    grade: string;
-  }[]
-> {
-  const mapStudentData = (d: { id: string; data: () => Record<string, unknown> }) => {
-    const data = d.data();
+interface StudentData {
+  id: string;
+  name: string;
+  baptismalName: string | null;
+  isNew: boolean;
+  canPlayInstrument: boolean;
+  isSinger: boolean;
+  gender: "M" | "F" | "?";
+  grade: string;
+}
+
+async function getStudentsFromFirestore(): Promise<StudentData[]> {
+  const db = getAdminFirestore();
+
+  const mapStudentData = (d: FirebaseFirestore.DocumentSnapshot): StudentData => {
+    const data = d.data() || {};
 
     let gender: "M" | "F" | "?" = "?";
     const rawGender = data.gender as string | undefined;
@@ -107,6 +97,7 @@ async function getStudentsFromFirestore(): Promise<
     return {
       id: d.id,
       name: (data.name as string) ?? "",
+      baptismalName: (data.baptismalName as string | null) ?? null,
       isNew: (data.isNewMember as boolean) ?? (data.isNewbie as boolean) ?? false,
       canPlayInstrument: canPlay || isAccompanist,
       isSinger: (data.isSinger as boolean) ?? canPlay ?? isAccompanist ?? false,
@@ -115,13 +106,7 @@ async function getStudentsFromFirestore(): Promise<
     };
   };
 
-  const snap = await getDocs(collection(firestore, "students"));
-  if (snap.empty) {
-    const userSnap = await getDocs(
-      query(collection(firestore, "users"), where("role", "==", "student"))
-    );
-    return userSnap.docs.map(mapStudentData);
-  }
+  const snap = await db.collection("students").get();
   return snap.docs.map(mapStudentData);
 }
 
@@ -129,16 +114,15 @@ async function getMassDatesForMonth(
   year: number,
   month: number
 ): Promise<{ id: string; date: Date }[]> {
+  const db = getAdminFirestore();
   const start = new Date(year, month - 1, 1);
   const end = new Date(year, month, 1);
 
-  const snap = await getDocs(
-    query(
-      collection(firestore, "massDates"),
-      where("date", ">=", Timestamp.fromDate(start)),
-      where("date", "<", Timestamp.fromDate(end))
-    )
-  );
+  const snap = await db
+    .collection("massDates")
+    .where("date", ">=", Timestamp.fromDate(start))
+    .where("date", "<", Timestamp.fromDate(end))
+    .get();
 
   return snap.docs
     .map((d) => ({
@@ -163,6 +147,7 @@ async function getAvailabilitiesForMassDates(
 > {
   if (massDateIds.length === 0) return new Map();
 
+  const db = getAdminFirestore();
   const CHUNK = 30;
   const result = new Map<
     string,
@@ -176,12 +161,10 @@ async function getAvailabilitiesForMassDates(
 
   for (let i = 0; i < massDateIds.length; i += CHUNK) {
     const chunk = massDateIds.slice(i, i + CHUNK);
-    const snap = await getDocs(
-      query(
-        collection(firestore, "availabilities"),
-        where("massDateId", "in", chunk)
-      )
-    );
+    const snap = await db
+      .collection("availabilities")
+      .where("massDateId", "in", chunk)
+      .get();
 
     snap.docs.forEach((d) => {
       const data = d.data();
@@ -205,34 +188,28 @@ async function getRecentAssignments(
 ): Promise<Map<string, { date: string; role: string }[]>> {
   if (studentIds.length === 0) return new Map();
 
+  const db = getAdminFirestore();
   const result = new Map<string, { date: string; role: string }[]>();
   const CHUNK = 30;
 
   for (let i = 0; i < studentIds.length; i += CHUNK) {
     const chunk = studentIds.slice(i, i + CHUNK);
-    const snap = await getDocs(
-      query(
-        collection(firestore, "assignments"),
-        where("studentId", "in", chunk),
-        where("isPrimary", "==", true),
-        orderBy("createdAt", "desc"),
-        limit(100)
-      )
-    );
+    const snap = await db
+      .collection("assignments")
+      .where("studentId", "in", chunk)
+      .where("isPrimary", "==", true)
+      .orderBy("createdAt", "desc")
+      .limit(100)
+      .get();
 
     for (const d of snap.docs) {
       const data = d.data();
       const sid = data.studentId as string;
       if (!result.has(sid)) result.set(sid, []);
 
-      const mdSnap = await getDocs(
-        query(
-          collection(firestore, "massDates"),
-          where("__name__", "==", data.massDateId)
-        )
-      );
-      if (!mdSnap.empty) {
-        const mdDate = mdSnap.docs[0].data().date?.toDate() as Date;
+      const mdSnap = await db.collection("massDates").doc(data.massDateId).get();
+      if (mdSnap.exists) {
+        const mdDate = mdSnap.data()?.date?.toDate() as Date;
         if (mdDate < beforeDate) {
           result.get(sid)!.push({
             date: formatDate(mdDate),
@@ -256,18 +233,17 @@ async function getTotalAssignmentCounts(
 ): Promise<Map<string, number>> {
   if (studentIds.length === 0) return new Map();
 
+  const db = getAdminFirestore();
   const result = new Map<string, number>();
   const CHUNK = 30;
 
   for (let i = 0; i < studentIds.length; i += CHUNK) {
     const chunk = studentIds.slice(i, i + CHUNK);
-    const snap = await getDocs(
-      query(
-        collection(firestore, "assignments"),
-        where("studentId", "in", chunk),
-        where("isPrimary", "==", true)
-      )
-    );
+    const snap = await db
+      .collection("assignments")
+      .where("studentId", "in", chunk)
+      .where("isPrimary", "==", true)
+      .get();
 
     snap.docs.forEach((d) => {
       const sid = d.data().studentId as string;
@@ -304,7 +280,6 @@ export async function POST(
 
     const [year, mon] = month.split("-").map(Number);
 
-    // 1. 해당 월 미사 일정 조회
     const massDates = await getMassDatesForMonth(year, mon);
     if (massDates.length === 0) {
       return NextResponse.json(
@@ -317,7 +292,6 @@ export async function POST(
       );
     }
 
-    // 2. 학생 목록 조회
     const studentsRaw = await getStudentsFromFirestore();
     if (studentsRaw.length === 0) {
       return NextResponse.json(
@@ -330,7 +304,6 @@ export async function POST(
       );
     }
 
-    // 3. 가용성 데이터 (body에서 직접 전달받거나 Firestore에서 조회)
     let availMap: Map<
       string,
       {
@@ -358,7 +331,6 @@ export async function POST(
       availMap = await getAvailabilitiesForMassDates(massDates.map((m) => m.id));
     }
 
-    // 4. 최근 배정 이력 + 총 배정 횟수 조회
     const studentIds = studentsRaw.map((s) => s.id);
     const firstMassDate = massDates[0].date;
     const [recentMap, totalMap] = await Promise.all([
@@ -366,16 +338,24 @@ export async function POST(
       getTotalAssignmentCounts(studentIds),
     ]);
 
-    // 5. Claude 입력 데이터 구성
     const dateStrings = massDates.map((m) => formatDate(m.date));
     const massDateIdToStr = new Map(
       massDates.map((m) => [m.id, formatDate(m.date)])
     );
 
+    // 응답한 학생 ID 집합 — 하나라도 응답이 있으면 응답한 것으로 간주
+    const respondedStudentIds = new Set<string>();
+    for (const avails of availMap.values()) {
+      for (const a of avails) {
+        respondedStudentIds.add(a.studentId);
+      }
+    }
+
     const studentsForClaude: MonthlyAssignmentInput["students"] =
       studentsRaw.map((s) => {
         const availableDates: string[] = [];
         const uncertainDates: string[] = [];
+        const unavailableDates: string[] = [];
         let comment: string | undefined;
 
         for (const [mdId, avails] of availMap) {
@@ -385,13 +365,26 @@ export async function POST(
           if (mine) {
             if (mine.status === "available") availableDates.push(dateStr);
             else if (mine.status === "uncertain") uncertainDates.push(dateStr);
+            else if (mine.status === "unavailable") unavailableDates.push(dateStr);
             if (mine.comment && !comment) comment = mine.comment;
           }
+        }
+
+        // 무응답 학생: 모든 날짜를 uncertain으로 간주하여 배정 가능하되 우선순위 낮춤
+        const isNoResponse = !respondedStudentIds.has(s.id);
+        if (isNoResponse) {
+          for (const dateStr of dateStrings) {
+            if (!uncertainDates.includes(dateStr)) {
+              uncertainDates.push(dateStr);
+            }
+          }
+          comment = (comment ? comment + " / " : "") + "[무응답: 확인 필요]";
         }
 
         return {
           id: s.id,
           name: s.name,
+          baptismalName: s.baptismalName,
           isNew: s.isNew,
           canPlayInstrument: s.canPlayInstrument,
           isSinger: s.isSinger,
@@ -399,6 +392,7 @@ export async function POST(
           grade: s.grade,
           availableDates,
           uncertainDates,
+          unavailableDates,
           comment,
           recentRoles: recentMap.get(s.id) ?? [],
           totalAssignments: totalMap.get(s.id) ?? 0,
@@ -411,7 +405,6 @@ export async function POST(
       students: studentsForClaude,
     };
 
-    // 6. Claude API 호출
     let result: Awaited<ReturnType<typeof generateMonthlyAssignments>>;
     try {
       result = await generateMonthlyAssignments(claudeInput);
@@ -433,7 +426,6 @@ export async function POST(
       );
     }
 
-    // 7. 응답 반환
     const response: MonthlyScheduleResult = {
       month,
       assignments: result.assignments,

@@ -9,15 +9,14 @@ import {
 } from "react";
 import {
   User,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase";
-import { getUserRole, setUserRole } from "@/lib/firestore";
+import { isTeacherUid } from "@/lib/firestore";
+import { isTeacherEmail } from "@/lib/auth";
 
 interface AuthUser {
   uid: string;
@@ -30,14 +29,7 @@ interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
   error: string | null;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (
-    email: string,
-    password: string,
-    name: string,
-    role: "teacher" | "student"
-  ) => Promise<void>;
-  signInWithGoogle: (role: "teacher" | "student") => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   isTeacher: boolean;
   isStudent: boolean;
@@ -53,103 +45,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
       if (firebaseUser) {
-        const role = await getUserRole(firebaseUser.uid);
+        // 1차: 이메일로 즉시 판단 → 로딩 블로킹 없이 완료
+        const emailIsTeacher = isTeacherEmail(firebaseUser.email);
         setUser({
           uid: firebaseUser.uid,
           email: firebaseUser.email,
           displayName: firebaseUser.displayName,
-          role,
+          role: emailIsTeacher ? "teacher" : "student",
         });
+        setLoading(false);
+
+        // 2차: teachers/{uid} 문서로 최종 검증
+        if (emailIsTeacher) {
+          try {
+            const docExists = await isTeacherUid(firebaseUser.uid);
+            setUser((prev) =>
+              prev ? { ...prev, role: docExists ? "teacher" : "student" } : prev
+            );
+          } catch {
+            // 문서 미생성 또는 규칙 거부 시 이메일 판단 유지
+          }
+        }
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      setError(null);
-      setLoading(true);
-      const credential = await signInWithEmailAndPassword(
-        firebaseAuth,
-        email,
-        password
-      );
-      const role = await getUserRole(credential.user.uid);
-      setUser({
-        uid: credential.user.uid,
-        email: credential.user.email,
-        displayName: credential.user.displayName,
-        role,
-      });
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "로그인에 실패했습니다.";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const signUp = async (
-    email: string,
-    password: string,
-    name: string,
-    role: "teacher" | "student"
-  ) => {
-    try {
-      setError(null);
-      setLoading(true);
-      const credential = await createUserWithEmailAndPassword(
-        firebaseAuth,
-        email,
-        password
-      );
-      await setUserRole(credential.user.uid, role, name, email);
-      setUser({
-        uid: credential.user.uid,
-        email: credential.user.email,
-        displayName: name,
-        role,
-      });
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "회원가입에 실패했습니다.";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const signInWithGoogle = async (role: "teacher" | "student") => {
+  const signInWithGoogle = async () => {
     try {
       setError(null);
       setLoading(true);
       const provider = new GoogleAuthProvider();
       const credential = await signInWithPopup(firebaseAuth, provider);
+      const firebaseUser = credential.user;
 
-      let existingRole = await getUserRole(credential.user.uid);
-
-      if (!existingRole) {
-        await setUserRole(
-          credential.user.uid,
-          role,
-          credential.user.displayName || "사용자",
-          credential.user.email || ""
-        );
-        existingRole = role;
+      // 교사 이메일이면 서버 API를 통해 teachers/{uid} 문서 생성
+      if (isTeacherEmail(firebaseUser.email)) {
+        const idToken = await firebaseUser.getIdToken();
+        await fetch("/api/auth/teacher-login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
       }
 
+      const teacherExists = await isTeacherUid(firebaseUser.uid);
       setUser({
-        uid: credential.user.uid,
-        email: credential.user.email,
-        displayName: credential.user.displayName,
-        role: existingRole,
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        role: teacherExists ? "teacher" : "student",
       });
     } catch (err) {
       const errorMessage =
@@ -178,8 +129,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     error,
-    signIn,
-    signUp,
     signInWithGoogle,
     signOut,
     isTeacher: user?.role === "teacher",

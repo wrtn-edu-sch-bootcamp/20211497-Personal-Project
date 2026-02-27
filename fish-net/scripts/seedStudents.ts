@@ -1,5 +1,5 @@
 /**
- * students.json → Firestore `users` 컬렉션 초기화 스크립트
+ * students.json → Firestore `students` 컬렉션 초기화 스크립트
  *
  * 실행 방법:
  *   npx ts-node --project scripts/tsconfig.json scripts/seedStudents.ts
@@ -115,15 +115,14 @@ async function seedStudents(): Promise<void> {
   const students: StudentJSON[] = JSON.parse(raw);
   console.log(`✅ ${students.length}명 데이터 로드 완료\n`);
 
-  // 기존 users 컬렉션 중 role=student 문서 수 확인
+  // 기존 students 컬렉션 문서 수 확인
   const existingSnap = await db
-    .collection("users")
-    .where("role", "==", "student")
+    .collection("students")
     .get();
 
   if (!existingSnap.empty) {
     console.warn(
-      `⚠️  users 컬렉션에 이미 학생 문서 ${existingSnap.size}개가 존재합니다.`
+      `⚠️  students 컬렉션에 이미 학생 문서 ${existingSnap.size}개가 존재합니다.`
     );
     console.warn("   기존 데이터는 유지하고 새 데이터를 추가합니다.\n");
   }
@@ -137,7 +136,7 @@ async function seedStudents(): Promise<void> {
     const batch = db.batch();
 
     for (const student of chunk) {
-      const docRef = db.collection("users").doc(); // 자동 ID 생성
+      const docRef = db.collection("students").doc(); // 자동 ID 생성
       const baptismalName = normalizeBaptismalName(student.baptismalName);
       const isNewMember = resolveIsNewMember(student.grade, student.isNewbie);
       const instrumentFields = resolveInstrumentFields(student.isAccompanist);
@@ -179,7 +178,7 @@ async function seedStudents(): Promise<void> {
     normalizeBaptismalName(s.baptismalName) === null
   );
 
-  console.log(`\n🎉 총 ${students.length}명을 Firestore users 컬렉션에 추가 완료!`);
+  console.log(`\n🎉 총 ${students.length}명을 Firestore students 컬렉션에 추가 완료!`);
   console.log("\n📊 업로드 요약:");
   console.log(`   전체      : ${students.length}명`);
   console.log(`   반주자    : ${accompanists.length}명  ← 배정 시 반주 역할 우선`);
@@ -195,7 +194,7 @@ async function seedStudents(): Promise<void> {
 }
 
 async function main() {
-  console.log("🚀 Firestore 학생 데이터 시드 시작 (users 컬렉션)\n");
+  console.log("🚀 Firestore 학생 데이터 시드 시작 (students 컬렉션)\n");
 
   try {
     await seedStudents();
