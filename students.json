@@ -1,0 +1,233 @@
+[
+  {
+    "name": "홍XX",
+    "baptismalName": "다니엘",
+    "grade": "중2",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "산XX",
+    "baptismalName": "노엘라",
+    "grade": "중2",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "변XX",
+    "baptismalName": "바오로",
+    "grade": "고3",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "진XX",
+    "baptismalName": "브루노",
+    "grade": "고2",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "변XX",
+    "baptismalName": "사도요한",
+    "grade": "고1",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "변XX",
+    "baptismalName": "다니엘",
+    "grade": "중2",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "윤XX",
+    "baptismalName": "베드로",
+    "grade": "고1",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "김XX",
+    "baptismalName": "알렉산델",
+    "grade": "중2",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "송XX",
+    "baptismalName": "율리안나",
+    "grade": "중2",
+    "isAccompanist": true,
+    "isNewbie": false
+  },
+  {
+    "name": "한XX",
+    "baptismalName": "소화데레사",
+    "grade": "중2",
+    "isAccompanist": true,
+    "isNewbie": false
+  },
+  {
+    "name": "이XX",
+    "baptismalName": "프란치스코",
+    "grade": "중2",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "전XX",
+    "baptismalName": "정희바르바라",
+    "grade": "중3",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "곽XX",
+    "baptismalName": "사비오",
+    "grade": "중1",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "배XX",
+    "baptismalName": "가브리엘라",
+    "grade": "고2",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "송XX",
+    "baptismalName": "미카엘",
+    "grade": "고2",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "송XX",
+    "baptismalName": "로사리아",
+    "grade": "중2",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "김XX",
+    "baptismalName": "글라라",
+    "grade": "중2",
+    "isAccompanist": true,
+    "isNewbie": false
+  },
+  {
+    "name": "권XX",
+    "baptismalName": "에스텔",
+    "grade": "중2",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "석XX",
+    "baptismalName": "리디아",
+    "grade": "고3",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "석XX",
+    "baptismalName": "아브라함",
+    "grade": "중3",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "서XX",
+    "baptismalName": "로사리아",
+    "grade": "중3",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "안XX",
+    "baptismalName": "엘리사벳",
+    "grade": "중1",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "이XX",
+    "baptismalName": "요한보스코",
+    "grade": "중1",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "서XX",
+    "baptismalName": "사도요한",
+    "grade": "중3",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "서XX",
+    "baptismalName": "요한비안네",
+    "grade": "중1",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "윤XX",
+    "baptismalName": "카타리나",
+    "grade": "고2",
+    "isAccompanist": true,
+    "isNewbie": false
+  },
+  {
+    "name": "윤XX",
+    "baptismalName": "요셉",
+    "grade": "중2",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "김XX",
+    "baptismalName": "미카엘",
+    "grade": "고3",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "박XX",
+    "baptismalName": "사도 토마스",
+    "grade": "중1",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "조XX",
+    "baptismalName": "다니엘",
+    "grade": "중1",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "이XX",
+    "baptismalName": "세례못받음",
+    "grade": "고3",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "이XX",
+    "baptismalName": "없음",
+    "grade": "고1",
+    "isAccompanist": false,
+    "isNewbie": false
+  },
+  {
+    "name": "이XX",
+    "baptismalName": "없음",
+    "grade": "중2",
+    "isAccompanist": false,
+    "isNewbie": false
+  }
+]

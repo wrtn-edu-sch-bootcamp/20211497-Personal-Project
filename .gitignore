@@ -1,8 +1,9 @@
 # Environment
 .env
-*.json
-!data/*.json
-!vercel.json
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Python
 __pycache__/
@@ -35,4 +36,4 @@ Thumbs.db
 
 # Google credentials
 *credentials*.json
-*service_account*.json
+*service-account*.json

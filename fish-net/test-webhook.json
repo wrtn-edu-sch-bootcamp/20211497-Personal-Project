@@ -1,0 +1,18 @@
+{
+  "type": "emergency_absence",
+  "timestamp": "2026-02-26T11:30:00.000Z",
+  "student": {
+    "id": "test123",
+    "name": "홍길동",
+    "baptismalName": "요셉"
+  },
+  "assignment": {
+    "massDateId": "test456",
+    "date": "2026-03-01",
+    "role": "1독서"
+  },
+  "absence": {
+    "reason": "테스트: 긴급 불참 신고 시스템 작동 확인",
+    "reportedAt": "2026-02-26T11:30:00.000Z"
+  }
+}
