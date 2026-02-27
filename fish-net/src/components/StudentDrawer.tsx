@@ -220,8 +220,8 @@ export default function StudentDrawer({
         query(collection(firestore, "availabilities"), where("studentId", "==", s.id))
       );
       const monthAvails = availSnap.docs
-        .map((d) => ({ ...d.data(), id: d.id }))
-        .filter((a) => massDateIds.has(a.massDateId as string));
+  .map((d) => ({ ...d.data(), id: d.id } as any)) // 일단 any로 빠르게 해결하거나
+  .filter((a) => massDateIds.has(a.massDateId as string));
 
       const availStatusCounts: Record<AvailabilityStatus, number> = {
         available: 0, uncertain: 0, unavailable: 0,
